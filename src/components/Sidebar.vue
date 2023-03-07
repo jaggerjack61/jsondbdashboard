@@ -5,7 +5,7 @@
     <ul class="menu-inner py-1">
       <!-- Dashboard -->
       <li class="menu-item">
-        <a href="#" class="menu-link">
+        <a href="#" class="menu-link" data-bs-toggle="modal" data-bs-target="#addDatabaseModal">
           <i class="menu-icon tf-icons bx bx-add-to-queue"></i>
           <div data-i18n="Analytics">Add New Database</div>
         </a>
@@ -23,6 +23,28 @@
     </p>
 
     </aside>
+
+    <div class="modal fade" id="addDatabaseModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Add New Database</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+
+
+              <input type="text" v-model="create_database" id="database" class="form-control m-1" placeholder="Database name">
+
+
+
+
+            <button @click="createDatabase()" class="form-control">submit</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -44,6 +66,7 @@ export default {
   data() {
     return {
       databases: null,
+      create_database:null,
     }
   },
   methods: {
@@ -60,7 +83,27 @@ export default {
           .catch(function (error) {
             console.log(error);
           });
+    },
+    createDatabase() {
+
+      axios.post('http://localhost:8000/create', {
+        database: this.create_database.replace(' ','_'),
+
+      })
+          .then( (response)=> {
+
+            store.commit('setDatabase',this.create_database.replace(' ','_')+'.json');
+            store.commit('setRecords',null);
+            axios.get('http://localhost:8000').then(response => this.databases = response.data).catch(error => this.database='error');
+            this.getTables(this.create_database.replace(' ','_')+'.json')
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+
+
     }
+
   }
 }
 </script>

@@ -1,7 +1,10 @@
 <template>
   <div>
     <div  v-if="!$store.state.records">
-    <h2>Database: {{$store.state.database.replace('.json','')}}</h2>
+      <div class="row m-2">
+        <div class="col-3"><span v-if="!$store.state.records && $store.state.database" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTableModal">new {{$store.state.database.replace('.json','')}} table</span></div>
+        <div class="col-9"><h2>Database: {{$store.state.database.replace('.json','')}}</h2></div>
+      </div>
     <table class="table table-bordered">
       <thead>
         <tr>
@@ -64,6 +67,44 @@
         </div>
       </div>
     </div>
+    <div v-if="!$store.state.records && $store.state.database" class="modal fade" id="addTableModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Add New Table</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <input class="form-control m-2" id="table_name" placeholder="Table name" />
+            </div>
+            <div class="row" v-for="c in count">
+
+              <div class="col-6">
+              <input type="text" class="form-control m-1" :id="'column'+c" placeholder="column name">
+              </div>
+              <div class="col-6">
+
+                <select :id="'data_type'+c" class="form-control">
+                  <option>Select Datatype</option>
+                  <option value="integer">Integer</option>
+                  <option value="float">Float</option>
+                  <option value="string">String</option>
+                </select>
+
+              </div>
+
+
+            </div>
+            <button @click="addColumn()" class="form-control">More Columns</button>
+            <button @click="removeColumn()" v-if="count>0" class="form-control">Less Columns</button>
+            <button @click="createTable()" v-if="count>0" class="form-control">Submit</button>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
 
 
 
@@ -87,7 +128,8 @@ export default {
   data() {
     return {
           columns:null,
-          schema:null
+          schema:null,
+          count:1,
     }
   },
   methods: {
@@ -152,6 +194,7 @@ export default {
       axios.post('http://localhost:8000/save',sc)
           .then((response)=> {
             console.log(response);
+            this.getRecords(store.state.table)
 
           })
           .catch(function (error) {
@@ -160,6 +203,43 @@ export default {
     },
     dynamicV(data) {
       return data.toString();
+    },
+    addColumn() {
+      this.count++;
+    },
+    removeColumn(){
+      this.count--;
+    },
+    createTable() {
+      let sc = {"table":document.getElementById('table_name').value.replace(' ','_'),"schema":[],"database":store.state.database.replace('.json','')};
+      for (let i = 1; i <= this.count; i++) {
+
+            sc["schema"].push({"name" : document.getElementById('column'+i.toString()).value.replace(' ','_'), "type": document.getElementById('data_type'+i.toString()).value});
+
+      }
+
+      // sc[2]=store.state.database.replace('.json','');
+
+      console.log(sc);
+      axios.post('http://localhost:8000/create/table',sc)
+          .then((response)=> {
+            console.log(response);
+            axios.post('http://localhost:8000/database', {
+              database: store.state.database,
+
+            })
+                .then(function (response) {
+                  store.commit('setTables', response.data);
+                })
+                .catch(function (error) {
+                  console.log(error);
+                });
+
+
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
     }
   }
 }
