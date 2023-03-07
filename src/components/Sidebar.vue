@@ -49,6 +49,7 @@ export default {
   methods: {
     getTables(database) {
       store.commit('setDatabase',database);
+      store.commit('setRecords',null);
       axios.post('http://localhost:8000/database', {
         database: database,
 

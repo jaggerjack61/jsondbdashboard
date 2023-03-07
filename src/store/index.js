@@ -5,6 +5,7 @@ export default createStore({
     database:'',
     table:'',
     tables:null,
+    records:null,
   },
   getters: {
   },
@@ -18,6 +19,9 @@ export default createStore({
     },
     setTables(state,tables){
       state.tables = tables;
+    },
+    setRecords(state, records) {
+      state.records = records;
     }
   },
   actions: {
