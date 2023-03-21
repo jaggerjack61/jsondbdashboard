@@ -86,7 +86,7 @@
               <div class="col-6">
 
                 <select :id="'data_type'+c" class="form-control">
-                  <option>Select Datatype</option>
+                  <option value="">Select Datatype</option>
                   <option value="integer">Integer</option>
                   <option value="float">Float</option>
                   <option value="string">String</option>
@@ -114,6 +114,8 @@
 <script>
 import store from "@/store";
 import axios from "axios";
+import {toast} from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 export default {
   name: 'Tables',
@@ -193,11 +195,14 @@ export default {
       console.log(sc);
       axios.post('http://localhost:8000/save',sc)
           .then((response)=> {
+            toast.success('Record successfully saved',{autoClose:2000});
             console.log(response);
             this.getRecords(store.state.table)
 
+
           })
           .catch(function (error) {
+            toast.warning('Failed to save record.',{autoClose:2000});
             console.log(error);
           });
     },
@@ -223,6 +228,7 @@ export default {
       console.log(sc);
       axios.post('http://localhost:8000/create/table',sc)
           .then((response)=> {
+            toast.success('Table successfully created.',{autoClose:2000});
             console.log(response);
             axios.post('http://localhost:8000/database', {
               database: store.state.database,
@@ -232,6 +238,7 @@ export default {
                   store.commit('setTables', response.data);
                 })
                 .catch(function (error) {
+                  toast.warning('Failed to create table.',{autoClose:2000});
                   console.log(error);
                 });
 

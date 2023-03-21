@@ -52,6 +52,8 @@
 <script>
 import axios from "axios";
 import store from "@/store";
+import {toast} from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
 
 export default {
   name: 'Sidebar',
@@ -79,6 +81,7 @@ export default {
       })
           .then(function (response) {
             store.commit('setTables', response.data);
+
           })
           .catch(function (error) {
             console.log(error);
@@ -96,9 +99,11 @@ export default {
             store.commit('setRecords',null);
             axios.get('http://localhost:8000').then(response => this.databases = response.data).catch(error => this.database='error');
             this.getTables(this.create_database.replace(' ','_')+'.json')
+            toast.success("Database has been created successfully",{autoClose:1500});
           })
           .catch(function (error) {
             console.log(error);
+            toast.warning("There was an error during the database creation process",{autoClose:1500});
           });
 
 
