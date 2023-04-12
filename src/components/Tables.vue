@@ -80,10 +80,10 @@
             </div>
             <div class="row" v-for="c in count">
 
-              <div class="col-6">
+              <div class="col-4">
               <input type="text" class="form-control m-1" :id="'column'+c" placeholder="column name">
               </div>
-              <div class="col-6">
+              <div class="col-4">
 
                 <select :id="'data_type'+c" class="form-control">
                   <option value="">Select Datatype</option>
@@ -91,7 +91,12 @@
                   <option value="float">Float</option>
                   <option value="string">String</option>
                 </select>
+              </div>
 
+              <div class="col-4">
+                <label>Encrypted</label>
+                <br>
+                <input type="checkbox" class="" :id="'encrypted'+c">
               </div>
 
 
@@ -219,7 +224,10 @@ export default {
       let sc = {"table":document.getElementById('table_name').value.replace(' ','_'),"schema":[],"database":store.state.database.replace('.json','')};
       for (let i = 1; i <= this.count; i++) {
 
-            sc["schema"].push({"name" : document.getElementById('column'+i.toString()).value.replace(' ','_'), "type": document.getElementById('data_type'+i.toString()).value});
+            sc["schema"].push({"name" : document.getElementById('column'+i.toString()).value.replace(' ','_'),
+              "type": document.getElementById('data_type'+i.toString()).value,
+              "encrypted":document.getElementById('encrypted'+i.toString()).checked}
+            );
 
       }
 
