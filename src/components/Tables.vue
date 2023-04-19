@@ -94,8 +94,8 @@
               </div>
               <div class="col-3">
 
-                <select :id="'data_type'+c" class="form-control m-1">
-                  <option value="">Select Datatype</option>
+                <select :id="'data_type'+c" v-model="strLength[c-1]" class="form-control m-1">
+                  <option value="" >Select Datatype</option>
                   <option value="integer">Integer</option>
                   <option value="float">Float</option>
                   <option value="string">String</option>
@@ -108,7 +108,7 @@
                 <input type="checkbox" class="" :id="'encrypted'+c">
               </div>
 
-              <div class="col-3">
+              <div class="col-3" v-if="strLength[c-1] === 'string'">
 
                 <input class="form-control m-1" type="number" step="1" :id="'length'+c" placeholder="length">
               </div>
