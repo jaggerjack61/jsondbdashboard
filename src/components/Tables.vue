@@ -19,14 +19,16 @@
         <tr v-for="table in $store.state.tables">
           <td><a href="#">{{ table.name }}</a></td>
           <td><a href="#" @click="getRecords(table.name)" class="btn btn-info btn-sm m-1">View</a>
-            <a href="#" class="btn btn-danger btn-sm m-1">Delete</a></td>
+            <a href="#" @click="deleteTable(table.name)" class="btn btn-danger btn-sm m-1">Delete</a></td>
         </tr>
         </tbody>
       </table>
     </div>
     <div v-if="$store.state.records">
       <div class="row m-2">
-        <div class="col-3"><span class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addRecordModal">new {{ $store.state.table }} record</span>
+        <div class="col-3"><span class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addRecordModal">new {{
+            $store.state.table
+          }} record</span>
         </div>
         <div class="col-9"><h2>Table: {{ $store.state.table }}</h2></div>
       </div>
@@ -36,12 +38,14 @@
         <thead>
         <tr>
           <th v-for="(value, key) in columns">{{ value }}</th>
+          <th>Action</th>
 
         </tr>
         </thead>
         <tbody v-if="$store.state.records">
         <tr v-for="row in $store.state.records">
           <td v-for="data in row"><a href="#">{{ data }}</a></td>
+          <td><a href="#" @click="deleteRecord(row.id)" class="btn btn-danger btn-sm m-1">Delete</a></td>
 
           <!--          <td><a href="#" @click="getRecords(table.name)" class="btn btn-info btn-sm m-1">View</a>-->
           <!--            <a href="#" class="btn btn-danger btn-sm m-1">Delete</a></td>-->
@@ -94,8 +98,8 @@
               </div>
               <div class="col-3">
 
-                <select :id="'data_type'+c" v-model="strLength[c-1]" class="form-control m-1">
-                  <option value="" >Select Datatype</option>
+                <select :id="'data_type'+c" class="form-control m-1">
+                  <option value="">Select Datatype</option>
                   <option value="integer">Integer</option>
                   <option value="float">Float</option>
                   <option value="string">String</option>
@@ -108,7 +112,7 @@
                 <input type="checkbox" class="" :id="'encrypted'+c">
               </div>
 
-              <div class="col-3" v-if="strLength[c-1] === 'string'">
+              <div class="col-3">
 
                 <input class="form-control m-1" type="number" step="1" :id="'length'+c" placeholder="length">
               </div>
@@ -153,7 +157,6 @@ export default {
     getRecords(table) {
 
       store.commit('setTable', table);
-      console.log(store.state.table)
       axios.post('http://localhost:8000/table', {
         database: store.state.database,
         table: table,
@@ -161,14 +164,14 @@ export default {
       })
           .then((response) => {
             store.commit('setRecords', response.data[table]);
-            console.log(response.data[table][0]);
+
             this.columns = null;
             this.columns = Object.keys(response.data[table][0] ?? [{column: '???'}]);
             this.getSchema(table)
 
           })
           .catch(function (error) {
-            console.log(error);
+
           });
     },
     getSchema(table) {
@@ -178,13 +181,11 @@ export default {
 
       })
           .then((response) => {
-            console.log('hello');
-            console.log(response)
             this.schema = response.data;
 
           })
           .catch(function (error) {
-            console.log(error);
+
           });
     },
     createRecord() {
@@ -198,22 +199,43 @@ export default {
           } else if (schema[i]['type'] === 'integer') {
             Object.assign(sc, {[schema[i]['name']]: parseInt(document.getElementById(schema[i]['name']).value, 10)});
           } else if (schema[i]['type'] === 'float') {
-            Object.assign(sc, {[schema[i]['name']]: parseFloat(document.getElementById(schema[i]['name']).value)});
+            Object.assign(sc, {[schema[i]['name']]: parseFloat(document.getElementById(schema[i]['name']).value.includes('.') ? document.getElementById(schema[i]['name']).value : parseFloat(document.getElementById(schema[i]['name']).value).toFixed(1))});
           }
 
         }
       }
       Object.assign(sc, {'database': store.state.database.replace('.json', '')});
       Object.assign(sc, {'table': store.state.table});
-      console.log(sc);
+
       axios.post('http://localhost:8000/save', sc)
+          .then((response) => {
+            toast.info(response.data.message, {autoClose: 2000});
+
+            this.getRecords(store.state.table)
+          })
+          .catch(function (error) {
+            toast.warning('Failed to save record.', {autoClose: 2000});
+
+          });
+    },
+    async deleteRecord(id) {
+      console.log({
+        database: store.state.database.replace('.json', ''),
+        table: store.state.table,
+        id: id
+      })
+      await axios.post('http://localhost:8000/delete/record', {
+        database: store.state.database.replace('.json', ''),
+        table: store.state.table,
+        id: id
+      })
           .then((response) => {
             toast.info(response.data.message, {autoClose: 2000});
             console.log(response);
             this.getRecords(store.state.table)
           })
           .catch(function (error) {
-            toast.warning('Failed to save record.', {autoClose: 2000});
+            toast.warning('Failed to delete record.', {autoClose: 2000});
             console.log(error);
           });
     },
@@ -226,6 +248,20 @@ export default {
     removeColumn() {
       this.count--;
     },
+    async getTables(){
+      await axios.post('http://localhost:8000/database', {
+        database: store.state.database,
+
+      })
+          .then(function (response) {
+            store.commit('setTables', response.data);
+          })
+          .catch(function (error) {
+            toast.warning('Failed to create table.', {autoClose: 2000});
+
+          });
+
+    },
     createTable() {
       let sc = {
         "table": document.getElementById('table_name').value.replace(' ', '_'),
@@ -233,50 +269,41 @@ export default {
         "database": store.state.database.replace('.json', '')
       };
       for (let i = 1; i <= this.count; i++) {
-        if (document.getElementById('data_type' + i.toString()).value === 'string' && document.getElementById('length' + i.toString()).value !== null) {
-          sc["schema"].push({
-                "name": document.getElementById('column' + i.toString()).value.replace(' ', '_'),
-                "type": document.getElementById('data_type' + i.toString()).value,
-                "encrypted": document.getElementById('encrypted' + i.toString()).checked,
-                "length": parseInt(document.getElementById('length' + i.toString()).value)
-              }
-          );
-
-        } else {
-          sc["schema"].push({
-                "name": document.getElementById('column' + i.toString()).value.replace(' ', '_'),
-                "type": document.getElementById('data_type' + i.toString()).value,
-                "encrypted": document.getElementById('encrypted' + i.toString()).checked
-              }
-          );
-
-        }
+        sc["schema"].push({
+              "name": document.getElementById('column' + i.toString()).value.replace(' ', '_'),
+              "type": document.getElementById('data_type' + i.toString()).value,
+              "encrypted": document.getElementById('encrypted' + i.toString()).checked,
+              "length": document.getElementById('length' + i.toString()).value === '' ? 255:parseInt(document.getElementById('length' + i.toString()).value)
+            }
+        );
 
 
       }
 
       // sc[2]=store.state.database.replace('.json','');
 
-      console.log(sc);
       axios.post('http://localhost:8000/create/table', sc)
           .then((response) => {
             toast.success('Table successfully created.', {autoClose: 2000});
-            console.log(response);
-            axios.post('http://localhost:8000/database', {
-              database: store.state.database,
-
-            })
-                .then(function (response) {
-                  store.commit('setTables', response.data);
-                })
-                .catch(function (error) {
-                  toast.warning('Failed to create table.', {autoClose: 2000});
-                  console.log(error);
-                });
-
+            this.getTables();
 
           })
           .catch(function (error) {
+
+          });
+    },
+    async deleteTable(table){
+      await axios.post('http://localhost:8000/delete/table', {
+        database: store.state.database.replace('.json', ''),
+        table: table
+      })
+          .then((response) => {
+            toast.info(response.data.message, {autoClose: 2000});
+            console.log(response);
+            this.getTables();
+          })
+          .catch(function (error) {
+            toast.warning('Failed to delete table.', {autoClose: 2000});
             console.log(error);
           });
     }
